@@ -1,0 +1,5 @@
+reportlab
+reportlab
+Pillow
+customtkinter
+python-docx

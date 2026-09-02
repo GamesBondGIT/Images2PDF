@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller / Inno Setup generated folders
+build/
+dist/
+*.spec
+InstallerOutput/
+
+# Temp files
+*.tmp.jpg
+
+# Settings
+# (Ignore local settings so users don't commit their personal settings)
+settings.json
+
+# IDEs
+.vscode/
+.idea/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
