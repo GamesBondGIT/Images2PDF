@@ -143,6 +143,9 @@ def generate_docx(source_dir, output_path, settings_path="settings.json", progre
     videos = []
     
     for root, dirs, files in os.walk(source_dir):
+        # Ignore the 'Videos' directory so we don't accidentally grab random images inside it
+        dirs[:] = [d for d in dirs if d.lower() != 'videos']
+        
         for file in files:
             if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')) and not file.endswith('.tmp.jpg'):
                 img_data = {

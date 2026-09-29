@@ -5,6 +5,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from pdf_generator import generate_pdf
 from docx_generator import generate_docx
+from video_utils import extract_thumbnails
 
 def get_settings_path():
     app_data = os.getenv('APPDATA')
@@ -224,18 +225,33 @@ class PDFGeneratorApp(ctk.CTk):
                     self.update_progress(int(scaled))
                 return callback
 
+            # Extract thumbnails if requested
+            video_settings = self.settings.get('video_thumbs', {})
+            if video_settings.get('enabled', False):
+                self.status_label.configure(text="Extracting video thumbnails...", text_color="gray70")
+                extract_thumbnails(
+                    src, 
+                    frame_number=video_settings.get('frame_number', 1),
+                    progress_callback=make_progress_callback(0, 10) # Takes 10% of total progress
+                )
+                start_progress = 10
+                scale_progress = 90
+            else:
+                start_progress = 0
+                scale_progress = 100
+
             success = False
             last_out = None
             if do_pdf and do_docx:
-                success_pdf = generate_pdf(src, out_base + ".pdf", SETTINGS_FILE, progress_callback=make_progress_callback(0, 50))
-                success_docx = generate_docx(src, out_base + ".docx", SETTINGS_FILE, progress_callback=make_progress_callback(50, 50))
+                success_pdf = generate_pdf(src, out_base + ".pdf", SETTINGS_FILE, progress_callback=make_progress_callback(start_progress, scale_progress / 2))
+                success_docx = generate_docx(src, out_base + ".docx", SETTINGS_FILE, progress_callback=make_progress_callback(start_progress + (scale_progress / 2), scale_progress / 2))
                 success = success_pdf or success_docx
                 last_out = out_base + ".docx"
             elif do_pdf:
-                success = generate_pdf(src, out_base + ".pdf", SETTINGS_FILE, progress_callback=make_progress_callback(0, 100))
+                success = generate_pdf(src, out_base + ".pdf", SETTINGS_FILE, progress_callback=make_progress_callback(start_progress, scale_progress))
                 last_out = out_base + ".pdf"
             elif do_docx:
-                success = generate_docx(src, out_base + ".docx", SETTINGS_FILE, progress_callback=make_progress_callback(0, 100))
+                success = generate_docx(src, out_base + ".docx", SETTINGS_FILE, progress_callback=make_progress_callback(start_progress, scale_progress))
                 last_out = out_base + ".docx"
                 
             if success:
@@ -293,6 +309,15 @@ class SettingsDialog(ctk.CTkToplevel):
         
         self.fmt_docx_var = ctk.BooleanVar(value=formats.get('docx', False))
         ctk.CTkCheckBox(tab_gen, text="Generate Word Doc (.docx)", variable=self.fmt_docx_var).grid(row=3, column=0, columnspan=2, padx=40, pady=5, sticky='w')
+        
+        video_settings = self.settings.get('video_thumbs', {})
+        ctk.CTkLabel(tab_gen, text="Video Thumbnails:", font=ctk.CTkFont(weight="bold")).grid(row=4, column=0, padx=20, pady=(10, 5), sticky='w')
+        self.gen_thumbs_var = ctk.BooleanVar(value=video_settings.get('enabled', False))
+        ctk.CTkCheckBox(tab_gen, text="Generate Thumbs from 'Videos' folder", variable=self.gen_thumbs_var).grid(row=5, column=0, columnspan=2, padx=40, pady=5, sticky='w')
+        
+        ctk.CTkLabel(tab_gen, text="Frame Number to Extract:").grid(row=6, column=0, padx=(40, 5), pady=5, sticky='w')
+        self.thumb_frame_var = ctk.StringVar(value=str(video_settings.get('frame_number', 1)))
+        ctk.CTkEntry(tab_gen, textvariable=self.thumb_frame_var, width=60).grid(row=6, column=1, padx=5, pady=5, sticky='w')
 
         # --- Titles Tab ---
         tab_titles = tabview.tab("Titles")
@@ -374,6 +399,14 @@ class SettingsDialog(ctk.CTkToplevel):
             self.settings['output_formats'] = {}
         self.settings['output_formats']['pdf'] = self.fmt_pdf_var.get()
         self.settings['output_formats']['docx'] = self.fmt_docx_var.get()
+        
+        if 'video_thumbs' not in self.settings:
+            self.settings['video_thumbs'] = {}
+        self.settings['video_thumbs']['enabled'] = self.gen_thumbs_var.get()
+        try:
+            self.settings['video_thumbs']['frame_number'] = int(self.thumb_frame_var.get())
+        except ValueError:
+            pass
         
         if 'title_page' not in self.settings:
             self.settings['title_page'] = {}

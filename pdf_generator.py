@@ -125,6 +125,9 @@ def generate_pdf(source_dir, output_path, settings_path="settings.json", progres
     videos = []
     
     for root, dirs, files in os.walk(source_dir):
+        # Ignore the 'Videos' directory so we don't accidentally grab random images inside it
+        dirs[:] = [d for d in dirs if d.lower() != 'videos']
+        
         folder_name = os.path.basename(root)
         for file in files:
             if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
